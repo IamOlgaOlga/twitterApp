@@ -127,7 +127,13 @@ insert into tags_tweets (id_tag, id_tweet) values (3, 11);
 insert into tags_tweets (id_tag, id_tweet) values (3, 12);
 
 
-select word from tags,tweets,tags_tweets where (tags_tweets.id_tag=tags.id and tags_tweets.id_tweet=tweets.id and tweets.timestamp > now() - interval '1 week') group by tags.word;
+select word from tags,tweets,tags_tweets
+where (tags_tweets.id_tag=tags.id and tags_tweets.id_tweet=tweets.id and tweets.timestamp > now() - interval '1 week')
+group by tags.word;
 
-select word from tags,tweets,tags_tweets where (tags_tweets.id_tag=tags.id and tags_tweets.id_tweet=tweets.id and tweets.timestamp > now() - interval '1 week')
-group by tags.word having count(tags_tweets.id_tag) >= all (select count(tags_tweets.id_tag) from tags_tweets group by tags_tweets.id_tag);
+select word from tags,tweets,tags_tweets
+where (tags_tweets.id_tag=tags.id and tags_tweets.id_tweet=tweets.id and tweets.timestamp > now() - interval '1 week')
+group by tags.word
+having count(tags_tweets.id_tag) >= all
+(select count(tags_tweets.id_tag) from tags_tweets,tweets
+ where (tags_tweets.id_tweet=tweets.id and tweets.timestamp > now() - interval '1 week') group by tags_tweets.id_tag);

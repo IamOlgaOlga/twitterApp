@@ -43,7 +43,7 @@ public class TweetEntity {
 	private boolean badEmotion;
 
 
-	@ManyToMany(fetch = FetchType.LAZY, mappedBy = "tweets")
+	@ManyToMany(fetch = FetchType.EAGER, mappedBy = "tweets")
 	private Set<TagEntity> tags;
 
 	public TweetEntity(){

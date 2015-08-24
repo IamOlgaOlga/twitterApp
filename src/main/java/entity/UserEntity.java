@@ -6,7 +6,7 @@ import java.util.Set;
 import static javax.persistence.GenerationType.IDENTITY;
 
 /**
- * Created by olga on 18.08.15.
+ * Created by olga on 20.08.15.
  */
 @Entity
 @Table(

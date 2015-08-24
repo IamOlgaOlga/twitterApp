@@ -5,10 +5,13 @@ import org.hibernate.cfg.Configuration;
 
 
 /**
- * Created by olga on 18.08.15.
+ * Created by olga on 20.08.15.
  */
 public class HibernateUtil {
-	private static final SessionFactory sessionFactory = buildSessionFactory();
+
+	private static final SessionFactory SESSION_FACTORY = buildSessionFactory();
+
+	private HibernateUtil(){}
 
 	private static SessionFactory buildSessionFactory() {
 		try {
@@ -23,7 +26,7 @@ public class HibernateUtil {
 	}
 
 	public static SessionFactory getSessionFactory() {
-		return sessionFactory;
+		return SESSION_FACTORY;
 	}
 
 	public static void shutdown() {

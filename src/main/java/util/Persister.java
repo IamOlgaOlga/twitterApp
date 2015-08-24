@@ -16,6 +16,22 @@ import java.util.List;
  */
 public final class Persister {
 
+	private static final String
+		SQL_QUERY_TAGS = "select word from tags,tweets,tags_tweets " +
+		"where (tags_tweets.id_tag=tags.id and tags_tweets.id_tweet=tweets.id " +
+		"and tweets.timestamp > now() - interval '1 week') group by tags.word;",
+		SQL_QUERY_POPULAR_TAG = "select word from tags,tweets,tags_tweets " +
+			"where (tags_tweets.id_tag=tags.id and tags_tweets.id_tweet=tweets.id " +
+			"and tweets.timestamp > now() - interval '1 week') " +
+			"group by tags.word having count(tags_tweets.id_tag) >= all " +
+			"(select count(tags_tweets.id_tag) from tags_tweets,tweets  " +
+			"where (tags_tweets.id_tweet=tweets.id and tweets.timestamp > now() - interval '1 week') " +
+			"group by tags_tweets.id_tag);",
+		NAME = "name",
+		USER_ENTITY = "userEntity",
+		TIMESTAMP = "timestamp",
+		WORD = "word";
+
 	public final void saveUser(final UserEntity userEntity){
 		final Session session = HibernateUtil.getSessionFactory().openSession();
 		try {
@@ -56,7 +72,7 @@ public final class Persister {
 	}
 
 	public void updateTag(final TagEntity tagEntity){
-		Session session = HibernateUtil.getSessionFactory().openSession();
+		final Session session = HibernateUtil.getSessionFactory().openSession();
 		try {
 			session.beginTransaction();
 			session.update(tagEntity);
@@ -73,77 +89,75 @@ public final class Persister {
 	}
 
 	public UserEntity getUser(final String name){
-		Session session = HibernateUtil.getSessionFactory().openSession();
-		Criteria criteria = session.createCriteria(UserEntity.class)
-			.add(Restrictions.eq("name", name));
+		UserEntity userEntity;
+		final Session session = HibernateUtil.getSessionFactory().openSession();
+		final Criteria criteria = session.createCriteria(UserEntity.class)
+			.add(Restrictions.eq(NAME, name));
 		final List<UserEntity> result = criteria.list();
 		session.close();
 		if (result.isEmpty()) {
-			return null;
+			userEntity = null;
 		} else {
-			return result.get(0);
+			userEntity = result.get(0);
 		}
+
+		return userEntity;
 	}
 
 	public TweetEntity getTweet(final UserEntity userEntity, final Date timestamp){
-		Session session = HibernateUtil.getSessionFactory().openSession();
-		Criteria criteria = session.createCriteria(TweetEntity.class)
-			.add(Restrictions.eq("userEntity", userEntity))
-			.add(Restrictions.eq("timestamp", timestamp));
+		TweetEntity tweetEntity;
+		final Session session = HibernateUtil.getSessionFactory().openSession();
+		final Criteria criteria = session.createCriteria(TweetEntity.class)
+			.add(Restrictions.eq(USER_ENTITY, userEntity))
+			.add(Restrictions.eq(TIMESTAMP, timestamp));
 		final List<TweetEntity> result = criteria.list();
 		session.close();
 		if (result.isEmpty()) {
-			return null;
+			tweetEntity = null;
 		} else {
-			return result.get(0);
+			tweetEntity = result.get(0);
 		}
+
+		return tweetEntity;
 	}
 
 	public TagEntity getTag(final String word){
-		Session session = HibernateUtil.getSessionFactory().openSession();
-		Criteria criteria = session.createCriteria(TagEntity.class)
-			.add(Restrictions.eq("word", word));
+		TagEntity tagEntity;
+		final Session session = HibernateUtil.getSessionFactory().openSession();
+		final Criteria criteria = session.createCriteria(TagEntity.class)
+			.add(Restrictions.eq(WORD, word));
 		final List<TagEntity> result = criteria.list();
 		session.close();
 		if (result.isEmpty()) {
-			return null;
+			tagEntity = null;
 		} else {
-			return result.get(0);
+			tagEntity = result.get(0);
 		}
+
+		return tagEntity;
 	}
 
 	public List<String> getTheMostPopularTag(){
-		Session session = HibernateUtil.getSessionFactory().openSession();
-		Query query = session.createSQLQuery(
-			"select word from tags,tweets,tags_tweets " +
-				"where (tags_tweets.id_tag=tags.id and tags_tweets.id_tweet=tweets.id " +
-				"and tweets.timestamp > now() - interval '1 week') " +
-				"group by tags.word having count(tags_tweets.id_tag) >= all (" +
-				"select count(tags_tweets.id_tag) from tags_tweets group by tags_tweets.id_tag);"
-		);
-		final List<String> result = query.list();
+		final Session session = HibernateUtil.getSessionFactory().openSession();
+		final Query query = session.createSQLQuery(SQL_QUERY_POPULAR_TAG);
+		List<String> result = query.list();
 		session.close();
 		if (result.isEmpty()) {
-			return null;
-		} else {
-			return result;
+			result = null;
 		}
+
+		return result;
 	}
 
 	public List<String> getLastWeekTag(){
-		Session session = HibernateUtil.getSessionFactory().openSession();
-		Query query = session.createSQLQuery(
-			"select word from tags,tweets,tags_tweets " +
-				"where (tags_tweets.id_tag=tags.id and tags_tweets.id_twit=tweets.id " +
-				"and tweets.timestamp > now() - interval '1 week') " +
-				"group by tags.word;"
-		);
-		final List<String> result = query.list();
+		final Session session = HibernateUtil.getSessionFactory().openSession();
+		final Query query = session.createSQLQuery(SQL_QUERY_TAGS);
+		List<String> result = query.list();
 		session.close();
 		if (result.isEmpty()) {
-			return null;
-		} else {
-			return result;
+			result = null;
 		}
+
+		return result;
 	}
 }
