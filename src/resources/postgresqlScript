@@ -1,0 +1,133 @@
+CREATE ROLE twitter WITH LOGIN PASSWORD 'twitter';
+
+-- DROP DATABASE twitter;
+
+CREATE DATABASE twitter
+  WITH OWNER = twitter
+       ENCODING = 'UTF8'
+       TABLESPACE = pg_default
+       LC_COLLATE = 'en_US.UTF-8'
+       LC_CTYPE = 'en_US.UTF-8'
+       CONNECTION LIMIT = -1;
+
+
+-- Table: users
+
+CREATE TABLE users
+(
+  id serial NOT NULL,
+  description character varying(1000),
+  followers_count integer,
+  language character varying(50),
+  location character varying(100),
+  name character varying(50) NOT NULL,
+  CONSTRAINT users_pkey PRIMARY KEY (id),
+  CONSTRAINT uk_user UNIQUE (name)
+)
+WITH (
+  OIDS=FALSE
+);
+ALTER TABLE users
+  OWNER TO twitter;
+
+-- Table: tweets
+
+CREATE TABLE tweets
+(
+  id serial NOT NULL,
+  retwits integer,
+  text character varying(1000) NOT NULL,
+  "timestamp" timestamp without time zone NOT NULL,
+  user_id integer NOT NULL,
+  bad_emotion boolean,
+  CONSTRAINT tweets_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_user_id FOREIGN KEY (user_id)
+      REFERENCES users (id) MATCH SIMPLE
+      ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT uk_tweet UNIQUE (user_id, "timestamp")
+)
+WITH (
+  OIDS=FALSE
+);
+ALTER TABLE tweets
+  OWNER TO twitter;
+
+-- Table: tags
+
+CREATE TABLE tags
+(
+id serial NOT NULL,
+word character varying(50) NOT NULL,
+CONSTRAINT tags_pkey PRIMARY KEY (id),
+CONSTRAINT uk_tag UNIQUE (word)
+)
+WITH (
+OIDS=FALSE
+);
+ALTER TABLE tags
+OWNER TO twitter;
+
+-- Table: tags_tweets
+
+CREATE TABLE tags_tweets
+(
+id_tag integer NOT NULL,
+id_tweet integer NOT NULL,
+CONSTRAINT fk_tag_id FOREIGN KEY (id_tag)
+  REFERENCES tags (id) MATCH SIMPLE
+  ON UPDATE CASCADE ON DELETE CASCADE,
+CONSTRAINT fk_tweet_id FOREIGN KEY (id_tweet)
+  REFERENCES tweets (id) MATCH SIMPLE
+  ON UPDATE CASCADE ON DELETE CASCADE
+)
+WITH (
+OIDS=FALSE
+);
+ALTER TABLE tags_tweets
+OWNER TO twitter;
+
+Tests:
+
+insert into tags (id,word) values (1,'god');
+insert into tags (id,word) values (2,'cat');
+insert into tags (id,word) values (3,'dog');
+
+insert into users (id,name) values (1,'TestUser');
+
+insert into tweets (id,text,timestamp,user_id) values (1,'test god 1', now() - interval '2 month', 1);
+insert into tweets (id,text,timestamp,user_id) values (2,'test god 2', now() - interval '2 month', 1);
+insert into tweets (id,text,timestamp,user_id) values (3,'test god 3', now() - interval '2 month', 1);
+insert into tweets (id,text,timestamp,user_id) values (4,'test god 4', now() - interval '2 month', 1);
+insert into tweets (id,text,timestamp,user_id) values (5,'test god 5', now() - interval '1 week', 1);
+
+insert into tweets (id,text,timestamp,user_id) values (6,'test cat 1', now() , 1);
+insert into tweets (id,text,timestamp,user_id) values (7,'test cat 2', now() , 1);
+insert into tweets (id,text,timestamp,user_id) values (8,'test cat 3', now() , 1);
+insert into tweets (id,text,timestamp,user_id) values (9,'test cat 4', now() - interval '1 day', 1);
+
+insert into tweets (id,text,timestamp,user_id) values (10,'test dog 1', now(), 1);
+insert into tweets (id,text,timestamp,user_id) values (11,'test dog 2', now() - interval '3 week', 1);
+insert into tweets (id,text,timestamp,user_id) values (12,'test dog 3', now() - interval '2 day', 1);
+
+
+
+insert into tags_tweets (id_tag, id_tweet) values (1, 1);
+insert into tags_tweets (id_tag, id_tweet) values (1, 2);
+insert into tags_tweets (id_tag, id_tweet) values (1, 3);
+insert into tags_tweets (id_tag, id_tweet) values (1, 4);
+insert into tags_tweets (id_tag, id_tweet) values (1, 5);
+
+insert into tags_tweets (id_tag, id_tweet) values (2, 6);
+insert into tags_tweets (id_tag, id_tweet) values (2, 7);
+insert into tags_tweets (id_tag, id_tweet) values (2, 8);
+insert into tags_tweets (id_tag, id_tweet) values (2, 9);
+
+insert into tags_tweets (id_tag, id_tweet) values (3, 10);
+insert into tags_tweets (id_tag, id_tweet) values (3, 11);
+insert into tags_tweets (id_tag, id_tweet) values (3, 12);
+
+
+select word from tags,tweets,tags_tweets where (tags_tweets.id_tag=tags.id and tags_tweets.id_tweet=tweets.id and tweets.timestamp > now() - interval '1 week') group by tags.word;
+
+select word from tags,tweets,tags_tweets where (tags_tweets.id_tag=tags.id and tags_tweets.id_tweet=tweets.id and tweets.timestamp > now() - interval '1 week')
+group by tags.word having count(tags_tweets.id_tag) >= all (select count(tags_tweets.id_tag) from tags_tweets group by tags_tweets.id_tag);
